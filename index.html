@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+    body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background-color: #007bff;
+            padding: 15px;
+            color: #fff;
+            box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .title {
+            font-size: 32px;
+            margin: 0;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        #noteInput {
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            padding: 10px;
+            width: 100%;
+            resize: vertical;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .note-card {
+            margin: 10px;
+            padding: 10px;
+            border-radius: 10px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+        }
+
+        .note-card:hover {
+            transform: scale(1.05);
+        }
+
+        .delete-icon {
+            position: absolute;
+            top: -6px;
+            right: 10px;
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 30px;
+        }
+
+        .card-body {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .note-title {
+            font-size: 14px;
+            margin-bottom: 5px;
+            color: #007bff;
+        }
+        .editable {
+            border: none;
+            outline: none;
+            padding: 8px;
+            border-radius: 5px;
+            width: 100%;
+            resize: none;
+            overflow: hidden;
+            min-height: 40px;
+           
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        .editable:focus {
+            background-color: #f0f0f0;
+        }
+
+        #notesContainer {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            grid-gap: 20px;
+        }
+    </style>
+    <title>AP's Sticky Thoughts</title>
+</head>
+<body>
+
+<div class="container mt-4">
+    <div class="header">
+        <h1 class="title"> Sticky Thoughts</h1>
+    </div>
+
+    <div class="form-group">
+        <textarea id="noteInput" class="form-control" placeholder="Type your note here..."></textarea>
+    </div>
+
+    <button class="btn btn-primary btn-block" onclick="addNote()">Add Note</button>
+
+    <div id="notesContainer" class="mt-4"></div>
+</div>
+
+<script>
+    function addNote() {
+        const noteText = document.getElementById('noteInput').value;
+
+        if (noteText.trim() !== '') {
+            const noteColor = getRandomLightColor();
+            const noteId = Date.now().toString();
+            const noteNumber = document.getElementById('notesContainer').childElementCount + 1;
+            const noteHTML = `<div id="${noteId}" class="card note-card" style="background-color: ${noteColor};">
+                                <div class="delete-icon" onclick="deleteNote('${noteId}')">&times;</div>
+                                <div class="card-body" onclick="editNote('${noteId}')">
+                                    <h5 class="note-title">Note ${noteNumber}</h5>
+                                    <div class="editable" contenteditable="true">${noteText}</div>
+                                </div>
+                             </div>`;
+
+            document.getElementById('notesContainer').innerHTML += noteHTML;
+
+            // Save note to local storage
+            const notes = JSON.parse(localStorage.getItem('notes')) || [];
+            notes.push({ id: noteId, text: noteText, color: noteColor });
+            localStorage.setItem('notes', JSON.stringify(notes));
+
+            // Clear input
+            document.getElementById('noteInput').value = '';
+        }
+    }
+
+    function editNote(noteId) {
+        const editableDiv = document.getElementById(noteId).querySelector('.editable');
+        editableDiv.focus();
+        editableDiv.addEventListener('blur', function () {
+            const notes = JSON.parse(localStorage.getItem('notes')) || [];
+            const updatedNotes = notes.map(note => {
+                if (note.id === noteId) {
+                    note.text = editableDiv.innerText;
+                }
+                return note;
+            });
+            localStorage.setItem('notes', JSON.stringify(updatedNotes));
+        });
+    }
+
+    function deleteNote(noteId) {
+        const noteElement = document.getElementById(noteId);
+        noteElement.remove();
+
+        // Remove note from local storage
+        const notes = JSON.parse(localStorage.getItem('notes')) || [];
+        const updatedNotes = notes.filter(note => note.id !== noteId);
+        localStorage.setItem('notes', JSON.stringify(updatedNotes));
+    }
+
+    function getRandomLightColor() {
+        const letters = '89ABCDEF'; // Using lighter shades
+        let color = '#';
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * letters.length)];
+        }
+        return color;
+    }
+
+    // Load existing notes from local storage
+    window.onload = function () {
+        const notes = JSON.parse(localStorage.getItem('notes')) || [];
+        notes.forEach(note => {
+            const noteHTML = `<div id="${note.id}" class="card note-card" style="background-color: ${note.color};">
+                                <div class="delete-icon" onclick="deleteNote('${note.id}')">&times;</div>
+                                <div class="card-body" onclick="editNote('${note.id}')">
+                                    <h5 class="note-title">Note ${document.getElementById('notesContainer').childElementCount + 1}</h5>
+                                    <div class="editable" contenteditable="true">${note.text}</div>
+                                </div>
+                             </div>`;
+            document.getElementById('notesContainer').innerHTML += noteHTML;
+        });
+    };
+</script>
+
+</body>
+</html>
